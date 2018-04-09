@@ -5,11 +5,11 @@
 	//--
 	// Link with the MySQL database.
 	//--	
-	$link = mysql_connect($db_host, $db_user, $db_pass);
+	$link = new mysqli($db_host, $db_user, $db_pass, $db_name);
 	if (!$link) { die('Could not connect: ' . mysql_error()); }
-	mysql_select_db("$db_name");
+	#mysql_select_db("$db_name");
 	
-	mysql_set_charset('utf8');
+	#mysql_set_charset('utf8');
 	
 	$acc_level = get_user_level($_SESSION['uname'],$link);
 	
@@ -35,8 +35,8 @@
 		{
 			// Approve entry. Fetch it from database and move to proper table.
 			$query = "SELECT * FROM $pool WHERE `id` = $id";
-			$result = mysql_query($query);
-			$row   = mysql_fetch_array($result);
+			$result = $link->query($query);
+			$row   = $result->fetch_array();
 			
 			// echo "<pre style=\"white-space: pre\">" . htmlspecialchars(print_r($data)) . "</pre>";
 			
@@ -57,14 +57,14 @@
 			$query = $query .      "VALUES (    '$date', '$author', '$category', '$source', '$title', '$text',  '$text_enGB');";
 			
 			echo $query . "</br>";
-			mysql_query($query);
-			if (mysql_error()) {
-				echo (mysql_error());
+			$link->query($query);
+			if ($link->error) {
+				echo ($link->error);
 				die();
 			} else {
 				$table = $db_table . "_queue";
 				$query = "DELETE FROM `$table` WHERE `id` = $id";
-				mysql_query($query);
+				$link->query($query);
 			}
 			
 			header("Location: index.php");
@@ -98,8 +98,8 @@
 		{
 			// Fetch the entry from database. We will make an archive of Removed entries, in case some get removed by accident.
 			$query = "SELECT * FROM $pool WHERE `id` = $id";
-			$result = mysql_query($query);
-			$row   = mysql_fetch_array($result);
+			$result = $link->query($query);
+			$row   = $result->fetch_array();
 			
 			// Write entry down to archive.
 			$archive = fopen("archive.txt", "a+");
@@ -109,7 +109,7 @@
 			fclose($archive);
 			
 			$query = "DELETE FROM `$pool` WHERE `id` = $id";
-			mysql_query($query);
+			$link->query($query);
 						
 			header("Location: index.php");
 			die();

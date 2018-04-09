@@ -1,14 +1,14 @@
 <?
-	define(ACC_GUEST		,-1);
-	define(ACC_NORMAL		,0);
-	define(ACC_VIP			,1);
-	define(ACC_MODERATOR	,2);
-	define(ACC_ADMINISTRATOR,3);
+	define("ACC_GUEST"		,-1);
+	define("ACC_NORMAL"		,0);
+	define("ACC_VIP"			,1);
+	define("ACC_MODERATOR"	,2);
+	define("ACC_ADMINISTRATOR",3);
 
 	$db_host 	= "localhost";
-	$db_name	= "iggyslab_bash";
-	$db_user	= "iggyslab_rollage";
-	$db_pass	= "LubieBudyn1";
+	$db_name	= "rollbash";
+	$db_user	= "rollbash";
+	$db_pass	= "bc98ZYjARVLhKau2";
 	$db_table 	= "rollbash";
 	
 	$admin_mail = "tomignatius1991@gmail.com";
@@ -16,19 +16,20 @@
 	
 	function get_user_level($user, $link)
 	{
-		$usr_table = $db_table . "rollbash_users";
+		global $db_table;
+		$usr_table = $db_table . "_users";
 		
 		$query = "SELECT `acc_level` FROM $usr_table WHERE `username` LIKE '$user'";
-		$result = mysql_query($query, $link);
+		$result = $link->query($query);
 		
-		if (mysql_error()) { echo "</br><b>MySQL returned error:</b> " . mysql_error(); }
+		if ($link->error) { echo "</br><b>MySQL returned error:</b> " . $link->error; }
 		
-		$data = mysql_fetch_array($result);
+		$data = $result->fetch_array();
 		
 		$user_level = $data[0];
 		return $user_level;
 		
-		mysql_close($link);
+		$link->close();
 	}
 	
 	function file_permission($perms)

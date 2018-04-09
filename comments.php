@@ -1,13 +1,14 @@
 <?
 	// Query the database to fetch the comments.
 	$comments_query = "SELECT comment_id, author, date, comment, address FROM `$comments_table` WHERE `bash_entry_id` = $id ORDER BY date DESC";
-	$comments_result = mysql_query($comments_query);
+	$comments_result = $link->query($comments_query);
 
 	$j = 2; // Counter for Comments, used to distinguish Odd and Even entries.
 			// We start with 2. The first entry is the Bash itself.
-	while ($row = mysql_fetch_array($comments_result, MYSQL_NUM))
+	while ($row = $comments_result->fetch_array())
 	{
 		// Fetch comment's data
+		#print_r($row);
 		$comment_id			= $row[0]; // Fetch comment's unique ID.
 		$comment_author		= $row[1]; // Comment's Author.
 		$comment_date		= strtotime($row[2]); // Comment's Time.
@@ -51,7 +52,7 @@
 		$j++;
 	}
 	
-	if (mysql_num_rows($comments_result) != 0) {
+	if ($comments_result->num_rows != 0) {
 		echo "<hr>\n";
 	}
 		

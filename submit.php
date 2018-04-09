@@ -18,21 +18,23 @@
 	$title		= $data['title'];
 	$quote		= $data['quote'];
 	$quote_engb = $data['quote_engb'];
-	$explicit	= $data['explicit'];
+	if (array_key_exists('explicit', $data)) {
+		$explicit	= $data['explicit'];
+	} else { $explicit = false; }
 	
 	$title 		= str_replace("'","\'",$title);
 	$quote 		= str_replace("'","\'",$quote);
-	$quote_engb = str_replace("'","\'",$qutoe_engb);
+	$quote_engb = str_replace("'","\'",$quote_engb);
 
 	$date		= gmdate("Y-m-d H:i:s");
 	
 	//$comment 	= utf8_encode($comment);
 	
 	/* Establish MySQL Connection */
-		$link = mysql_connect($db_host, $db_user, $db_pass);
+		$link = new mysqli($db_host, $db_user, $db_pass, $db_name);
 		if (!$link) { die('Could not connect: ' . mysql_error()); }
 		// Select the database
-		mysql_select_db("$db_name", $link);
+		#mysql_select_db("$db_name", $link);
 		
 	/* Insert */
 		// Check for LEVEL
@@ -51,14 +53,14 @@
 		$query = "INSERT INTO `$table` (`post_date`,  `author`,  `category`,  `source`,  `title`,  `text`,  `text_translated`) ";
 		$query = $query .      "VALUES (    '$date', '$author', '$category', '$source', '$title', '$quote', '$quote_engb');";
 		
-		mysql_set_charset('utf8');
-		mysql_query($query);
+		#mysql_set_charset('utf8');
+		$link->query($query);
 				
-		if (mysql_error($link)) {
-			header("LOCATION: index.php?error=".urlencode(mysql_error($link)) );
+		if ($link->error) {
+			header("LOCATION: index.php?error=".urlencode($link->error) );
 			die();
 		}
 		
-		mysql_close($link);
+		$link->close();
 	header("LOCATION: index.php?page=confirm");
 ?>

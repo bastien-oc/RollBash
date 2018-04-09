@@ -6,9 +6,9 @@
 		die();
 	}
 	
-	$link = mysql_connect($db_host, $db_user, $db_pass);
+	$link = mysqli_connect($db_host, $db_user, $db_pass, $db_name);
 	if (!$link) { die('Could not connect: ' . mysql_error()); }
-	mysql_select_db("$db_name");
+	#mysql_select_db("$db_name");
 	
 	$username = $_POST['username'];
 	$password = sha1($_POST['password']);
@@ -23,14 +23,14 @@
 	// Build the query
 	$query = "SELECT * FROM $table_users WHERE `username` LIKE '$username' AND `password` = '$password' AND `active` = 1";
 	
-	$result = mysql_query($query);
+	$result = $link->query($query);
 	
-	if (mysql_num_rows($result) == 0) {
+	if ($result->num_rows == 0) {
 		header("Location: index.php?error=passwd");
 		die();
 	}
 	
-	while ( $row = mysql_fetch_array($result, MYSQL_NUM) )
+	while ( $row = $result->fetch_row() )
 	{
 		$username_db	= $row[0];
 		$passwdsh_db	= $row[1];

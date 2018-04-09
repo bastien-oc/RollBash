@@ -1,8 +1,8 @@
 ﻿<?
-	if (!$graphic)
-	{
-		if ( !function_exists("cp2iso") ) { function cp2iso($tekst){ return strtr($tekst, "\xA5\x8C\x8F\xB9\x9C\x9F","\xA1\xA6\xAC\xB1\xB6\xBC"); } } if ( ob_start("cp2iso") ) register_shutdown_function("ob_flush");
-	}
+	#if (!$graphic)
+	#{
+	#	if ( !function_exists("cp2iso") ) { function cp2iso($tekst){ return strtr($tekst, "\xA5\x8C\x8F\xB9\x9C\x9F","\xA1\xA6\xAC\xB1\xB6\xBC"); } } if ( ob_start("cp2iso") ) register_shutdown_function("ob_flush");
+	#}
 ?>
 
 <?
@@ -10,14 +10,21 @@
 	include_once "config.php";
 	include_once "google_translate.php";
 	session_start();
-	
+
+	$moderation_mode = false;
 	/**
 	 * Link with the MySQL database.
 	 */
 	
-	$link = mysql_connect($db_host, $db_user, $db_pass);
-	if (!$link) { die('Could not connect: ' . mysql_error()); }
-	mysql_select_db("$db_name");
+	#$link = mysqli_connect($db_host, $db_user, $db_pass, $db_name);
+	$link = new mysqli($db_host, $db_user, $db_pass, $db_name);
+	if ($link->connect_errno) {
+		printf("Connect failed: %s\n",$link->connection_error);
+		exit();
+	}
+	#if (!$link) { die('Could not connect: ' . mysql_error()); }
+	#mysql_select_db("$db_name");
+
 	
 	/**
 	 * MySQL Queries
@@ -30,55 +37,60 @@
 	// Get the number of entries from MySQL. Used later.
 	// --
 	$query = "SELECT * FROM $table";
-	$bash_num_result = mysql_query($query);
-	$bash_num		= mysql_num_rows($bash_num_result);
+	$bash_num_result = $link->query($query);
+	$bash_num		= $bash_num_result->num_rows;
 	$pages_num = $bash_num / 10;
 	
 	$query = "SELECT * FROM $table_queue";
-	$moderation_num_result 	= mysql_query($query);
-	$moderation_num			= mysql_num_rows($moderation_num_result);
+	$moderation_num_result 	= $link->query($query);
+	$moderation_num			= $moderation_num_result->num_rows;
 	
 	// -- 
 	// Get the number of users!
 	// --
 	$query = "SELECT * FROM $table_users WHERE `active` = 1";
-	$result 		= mysql_query($query);
-	$active_users	= mysql_num_rows($result);
+	$result 		= $link->query($query);
+	$active_users	= $result->num_rows;
 	
 	$query = "SELECT * FROM $table_users WHERE `active` = 0";
-	$result 		= mysql_query($query);
-	$inactive_users	= mysql_num_rows($result);
+	$result 		= $link->query($query);
+	$inactive_users	= $result->num_rows;
 	
 	// -- 
 	// Get user session related data.
 	// --
-	$uname = $_SESSION['uname'];
-	
-	if ($_SESSION['auth'] == false) 
-	{
-		$acc_level = ACC_GUEST;
+	$uname = "";
+	if (array_key_exists("uname", $_SESSION)) {
+		$uname = $_SESSION['uname'];
 	} else {
-		$acc_level = get_user_level($_SESSION['uname'],$link);
+		$uname = "";
 	}
+	
+
+	$auth = false;
+	# If session exists and contains 'auth' key, assign that. Otherwise use default 'false'
+	if (array_key_exists("auth", $_SESSION)) { $auth = $_SESSION["auth"]; }
+	if ($auth == false) { $acc_level = ACC_GUEST; }
+	else { $acc_level = get_user_level($_SESSION['uname'],$link); }
 	
 	// --
 	// Get number of posts in each of major category.
 	// --
 	$query = "SELECT * FROM $table WHERE `category` = 'RPG'";
-	$result			= mysql_query($query);
-	$posts_num_rpg	= mysql_num_rows($result);
+	$result			= $link->query($query);
+	$posts_num_rpg	= $result->num_rows;
 	
 	$query = "SELECT * FROM $table WHERE `category` = 'Chat and IM'";
-	$result			= mysql_query($query);
-	$posts_num_chat	= mysql_num_rows($result);
+	$result			= $link->query($query);
+	$posts_num_chat	= $result->num_rows;
 	
 	$query = "SELECT * FROM $table WHERE `category` = 'Gaming'";
-	$result			= mysql_query($query);
-	$posts_num_game	= mysql_num_rows($result);
+	$result			= $link->query($query);
+	$posts_num_game	= $result->num_rows;
 	
 	$query = "SELECT * FROM $table WHERE `category` = 'Other'";
-	$result			= mysql_query($query);
-	$posts_num_misc	= mysql_num_rows($result);
+	$result			= $link->query($query);
+	$posts_num_misc	= $result->num_rows;
 ?>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -90,7 +102,10 @@
 </head>
 <body>
 	<?
-		$page = $_GET['page'];
+		$page = "";
+		if (array_key_exists('page',$_GET)) {
+			$page = $_GET['page'];
+		}
 		if ($page == "") { $page = "main"; }
 	?>
 	
@@ -176,27 +191,30 @@
 	
 	
 	{ /* Voting Box */
-		$id = $_GET['id'];	
-		$vote = $_GET['vote'];
+		$id = 0;
+		$vote = 0;
+		if (array_key_exists('id',$_GET)) { $id = $_GET['id']; }
+		if (array_key_exists('vote', $_GET)) { $vote = $_GET['vote']; }
 		
 		if ($vote != 0 && $acc_level >= ACC_NORMAL) {
 			$table_votes = $db_table . "_votes";
 			
 			// Check whether user voted already or not.
 			$query = "SELECT * FROM `$table_votes` WHERE `uname` = '$uname' AND `id` = $id";
-			$result = mysql_query($query);
+			$result = $link->query($query);
 			
 			if (mysql_num_rows($result) > 0) {
 				// We have voted on that entry already. Abort!
 			} else  {
 				// We still have a vote remaining.
 				$query = "INSERT INTO `$table_votes` (`id`,`uname`,`value`) VALUES ('$id','$uname','$vote');";
-				mysql_query($query);
+				$link->query($query);
 			}
 		}
 	}
 	
-	if ($_GET['error']) {
+	if (array_key_exists('error',$_GET))
+	{
 		// Define error type.
 		$error = $_GET['error'];
 		switch ($error) {
@@ -242,7 +260,7 @@
 		// Display the Entries Script
 		include_once "main.php";
 	} else
-	
+
 	if ($page == "moderation")
 	{
 		// This script basically calls for main.php which in itself supports moderation.
@@ -250,6 +268,8 @@
 		if ($acc_level >= ACC_MODERATOR)
 		{
 			$moderation_mode = true;
+		} else {
+			$moderation_mode = false;
 		}
 		
 		// In either way we display main.php. However, only mods will be able to see 
@@ -343,7 +363,7 @@
 			echo "<div class=\"even\">";
 			
 			$query = "SELECT * FROM $table_users";
-			$result = mysql_query($query);
+			$result = $link->query($query);
 				
 			echo "<table align=\"center\" style=\'padding: 0px\">";
 			echo "<tr>";
